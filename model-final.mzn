@@ -5,7 +5,7 @@ int: groups = 13;
 % number of days
 int: m=7; 
 
-int: minOn=3; % lower bound for working day
+int: minOn=5; % lower bound for working day
 int: maxOn=7; % upper bound for working day
 
 int: minOff=1; % lower bound for dayoff
@@ -44,7 +44,7 @@ constraint forall(d in 1..m)(
                  sum(e in EMPLOYEE)(x[e,d] == afternoon) == demand[2, d] /\
                  sum(e in EMPLOYEE)(x[e,d] == night) == demand[3, d]
                  );
-                   
+
 % Forbidden (if forbidden)
 %% Forbidden afternoon
 constraint forall(e in EMPLOYEE, d in 1..m-1)
@@ -92,6 +92,10 @@ constraint forall(e in EMPLOYEE)
                    [ maxOff ]));
 
 % Constraint on lowe and upper bond of working days
+constraint forall(e in EMPLOYEE)(
+                 sum(d in DAY)((x[e,d] == day) + (x[e,d] == afternoon) + (x[e,d] == night)) >= minOn /\
+                 sum(d in DAY)((x[e,d] == day) + (x[e,d] == afternoon) + (x[e,d] == night)) <= maxOn 
+                 );
 
 solve satisfy;
 
