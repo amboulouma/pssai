@@ -24,6 +24,12 @@ int: n_max=maxShift[3]; % upper bound for nightshift
 set of int: EMPLOYEE = 1..groups; % Employees
 
 set of int: DAY = 1..m; % Days
+                                           
+array[int] of set of int: forbidden;
+array[int, int] of int: forbidden3;
+
+forbidden = [{}, {1}, {1,2}];
+forbidden3 = [||];
 
 % Shifts
 int: shifts = numShifts+1;
@@ -47,25 +53,25 @@ constraint forall(d in 1..m)(
 
 % Forbidden (if forbidden)
 %% Forbidden afternoon
-constraint forall(e in EMPLOYEE, d in 1..m-1)
-                 (x[e,d] = afternoon -> x[e,d+1] != day);
+constraint if forbidden == [{}, {1}, {1,2}] then forall(e in EMPLOYEE, d in 1..m-1)
+                 (x[e,d] = afternoon -> x[e,d+1] != day) endif;
 
 %% Forbidden nights
-constraint forall(e in EMPLOYEE, d in 1..m-1)
-                 (x[e,d] = night -> x[e,d+1] != day);
+constraint if forbidden == [{}, {1}, {1,2}] then forall(e in EMPLOYEE, d in 1..m-1)
+                 (x[e,d] = night -> x[e,d+1] != day) endif;
 
-constraint forall(e in EMPLOYEE, d in 1..m-1)
-                 (x[e,d] = night -> x[e,d+1] != afternoon);
+constraint if forbidden == [{}, {1}, {1,2}] then forall(e in EMPLOYEE, d in 1..m-1)
+                 (x[e,d] = night -> x[e,d+1] != afternoon) endif;
 
 % Forbidden 3 (if forbidden3)
-constraint forall(e in EMPLOYEE, d in 1..m-2)
-                 (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != night);
-constraint forall(e in EMPLOYEE, d in 1..m-2)
-                 (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != day);
-constraint forall(e in EMPLOYEE, d in 1..m-2)
-                 (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != afternoon);
-constraint forall(e in EMPLOYEE, d in 1..m-2)
-                 (x[e,d] = afternoon /\ x[e,d+1] = dayoff -> x[e,d+2] != day);                 
+constraint if forbidden3 != [||] then forall(e in EMPLOYEE, d in 1..m-2)
+                 (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != night) endif;
+constraint if forbidden3 != [||] then forall(e in EMPLOYEE, d in 1..m-2)
+                 (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != day) endif;
+constraint if forbidden3 != [||] then forall(e in EMPLOYEE, d in 1..m-2)
+                 (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != afternoon) endif;
+constraint if forbidden3 != [||] then forall(e in EMPLOYEE, d in 1..m-2)
+                 (x[e,d] = afternoon /\ x[e,d+1] = dayoff -> x[e,d+2] != day) endif;                 
 
 % Constraint on lower and upper bonds of consecutive working days
 %% Lower bond
@@ -79,11 +85,12 @@ constraint forall(e in EMPLOYEE)(
            
 %% Upper bond
 constraint forall(e in EMPLOYEE, d in 1..m-maxOn+1)(
-                 if forall(i in d..d+maxOn-1)(
-                    x[e,i] != dayoff 
-                 ) then x[e,d+maxOn] = dayoff endif
+                      forall(i in d..d+maxOn-1)(
+                        x[e,i] != dayoff 
+                      ) -> if d+maxOn <= m then x[e,d+maxOn] == dayoff endif
            ); 
 
+           
 % constraint forall(e in EMPLOYEE, d in 1..m-1)(
 %                 % Working day
 %                 sum(d in DAY)((x[e,d] == day) + (x[e,d] == afternoon) + (x[e,d] == night)) >= minOn /\
