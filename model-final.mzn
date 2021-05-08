@@ -29,10 +29,6 @@ int: day = 1; int: afternoon = 2; int: night = 3; int: dayoff = 4;
 array[SHIFT] of string: code = ["D", "A", "N", "-"];
 
 array[EMPLOYEE,DAY] of var SHIFT: x;
-
-% constraint forall(e in EMPLOYEE, d in 1..m-2)
-%                 ( x[e,d] = night /\ x[e,d+1] = night 
-%                   -> x[e,d+2] = dayoff);
                    
 % Forbidden (if forbidden)
 %% Forbidden afternoon
