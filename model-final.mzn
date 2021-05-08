@@ -6,7 +6,7 @@ int: groups = 13;
 int: m=7; 
 
 int: minOn=3; % lower bound for working day
-int: maxOn=7; % upper bound for working day
+int: maxOn=5; % upper bound for working day
 
 int: minOff=1; % lower bound for dayoff
 int: maxOff=4; % upper bound for dayoff
@@ -72,11 +72,17 @@ constraint forall(e in EMPLOYEE, d in 1..m-2)
 constraint forall(e in EMPLOYEE)(
                     exists(d in 1..m-minOn+1)(
                       forall(i in d..d+minOn-1)(
-                        x[e,i] != dayoff
+                        x[e,i] != dayoff 
                       )
                )
            ); 
-                    
+           
+%% Upper bond
+constraint forall(e in EMPLOYEE, d in 1..m-maxOn+1)(
+                 if forall(i in d..d+maxOn-1)(
+                    x[e,i] != dayoff 
+                 ) then x[e,d+maxOn] = dayoff endif
+           ); 
 
 % constraint forall(e in EMPLOYEE, d in 1..m-1)(
 %                 % Working day
