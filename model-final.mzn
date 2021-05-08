@@ -26,18 +26,24 @@ set of int: EMPLOYEE = 1..groups; % Employees
 set of int: DAY = 1..m; % Days
 
 % Shifts
-set of int: SHIFT = 1..numShifts+1; 
+int: shifts = numShifts+1;
+set of int: SHIFT = 1..shifts; 
 int: day = 1; int: afternoon = 2; int: night = 3; int: dayoff = 4;
 array[SHIFT] of string: code = ["D", "A", "N", "-"];
 
 % Demand
-array[SHIFT, DAY] of int: demand = [| 5, 5, 5, 5, 5, 5, 0,
-                                    | 5, 5, 5, 5, 5, 5, 0,
-                                    | 1, 1, 1, 1, 1, 0, 0 |];
-
-
+array[1..numShifts, DAY] of int: demand =  [| 5, 5, 5, 5, 5, 5, 0,
+                                            | 5, 5, 5, 5, 5, 5, 0,
+                                            | 1, 1, 1, 1, 1, 0, 0 |];
 % Solution matrix
 array[EMPLOYEE,DAY] of var SHIFT: x;
+
+% Demand constraints
+constraint forall(d in 1..m)(
+                 sum(e in EMPLOYEE)(x[e,d] == day) == demand[1, d] /\
+                 sum(e in EMPLOYEE)(x[e,d] == afternoon) == demand[2, d] /\
+                 sum(e in EMPLOYEE)(x[e,d] == night) == demand[3, d]
+                 );
                    
 % Forbidden (if forbidden)
 %% Forbidden afternoon
