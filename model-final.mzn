@@ -68,20 +68,13 @@ constraint forall(e in EMPLOYEE, d in 1..m-2)
                  (x[e,d] = afternoon /\ x[e,d+1] = dayoff -> x[e,d+2] != day);                 
 
 % Constraint on lowe and upper bonds of consecutive working days
-
-%% Max = 7
-%% D,A,N * minOn -> next day off [soft]
-%% D,A,N * maxOn -> next day off [hard]
-
-%% day off or day[1] -> D,A,N * minOn [hard] 
-
-%% day off or day[1] -> D,A,N * minOn [hard] 
-constraint forall(e in EMPLOYEE, d in 1..m-minOn+1)(
-                    forall(i in d..d+minOn-1)(
+constraint forall(e in EMPLOYEE)(
+                    exists(d in 1..m-minOn+1)(
+                      forall(i in d..d+minOn-1)(
                         x[e,i] == day \/ x[e,i] == afternoon \/ x[e,i] == night
-                      ) /\ 
-                    (sum(do in 1..m)(x[e,do] == dayoff) > 0)
-                    ); 
+                      )
+               )
+           ); 
                     
 
 % constraint forall(e in EMPLOYEE, d in 1..m-1)(
