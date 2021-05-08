@@ -1,9 +1,11 @@
-% Number of shift types
-int: numShifts;
-% Number of employees
-int: groups;
-% number of days
-int: m=7; 
+% Project Topic D: Rotating Workforce Scheduling
+% Problem Solving and Search in AI: Programming Exercises
+% Mohamed Amine Boulouma
+% 
+
+% Input variables
+int: m=7; % number of days
+set of int: DAY = 1..m; % Days
 
 int: minOn; % lower bound for working day
 int: maxOn; % upper bound for working day
@@ -11,8 +13,23 @@ int: maxOn; % upper bound for working day
 int: minOff; % lower bound for dayoff
 int: maxOff; % upper bound for dayoff
 
-array[int] of int: minShift;
-array[int] of int: maxShift;
+int: numShifts; % Number of shift types
+int: groups; % Number of employees
+
+array[int] of int: minShift; % Lower bound shifts
+array[int] of int: maxShift; % Upper bound shifts
+
+array[int] of set of int: forbidden; % Forbidden set 1
+array[int, int] of int: forbidden3; % Forbidden set 3
+
+array[int, int] of int: forbidden3_data = [| 3, 0, 3,
+              | 2, 0, 1,
+              | 3, 0, 2,
+              | 3, 0, 1 |]; % Forbidden set 3
+
+array[1..numShifts, DAY] of int: demand; % Demand
+
+set of int: EMPLOYEE = 1..groups; % Employees
 
 int: d_min=minShift[1]; % lower bound for dayshift
 int: d_max=maxShift[1]; % upper bound for dayshift
@@ -21,49 +38,86 @@ int: a_max=maxShift[2]; % upper bound for afternoon shift
 int: n_min=minShift[3]; % lower bound for nightshift
 int: n_max=maxShift[3]; % upper bound for nightshift
 
-set of int: EMPLOYEE = 1..groups;
-set of int: DAY = 1..m;
-
-set of int: SHIFT = 1..numShifts+1;
+% Shifts
+int: shifts = numShifts+1;
+set of int: SHIFT = 1..shifts; 
 int: day = 1; int: afternoon = 2; int: night = 3; int: dayoff = 4;
 array[SHIFT] of string: code = ["D", "A", "N", "-"];
 
+% Solution matrix
 array[EMPLOYEE,DAY] of var SHIFT: x;
 
-% constraint forall(e in EMPLOYEE, d in 1..m-2)
-%                 ( x[e,d] = night /\ x[e,d+1] = night 
-%                   -> x[e,d+2] = dayoff);
-                   
+% Demand constraints
+constraint forall(d in 1..m)(
+                 sum(e in EMPLOYEE)(x[e,d] == day) == demand[1, d] /\
+                 sum(e in EMPLOYEE)(x[e,d] == afternoon) == demand[2, d] /\
+                 sum(e in EMPLOYEE)(x[e,d] == night) == demand[3, d]
+                 );
+
 % Forbidden (if forbidden)
 %% Forbidden afternoon
-constraint forall(e in EMPLOYEE, d in 1..m-1)
-                 (x[e,d] = afternoon -> x[e,d+1] != day);
+constraint if forbidden == [{}, {1}, {1,2}] then forall(e in EMPLOYEE, d in 1..m-1)
+                 (x[e,d] = afternoon -> x[e,d+1] != day) endif;
 
 %% Forbidden nights
-constraint forall(e in EMPLOYEE, d in 1..m-1)
-                 (x[e,d] = night -> x[e,d+1] != day);
+constraint if forbidden == [{}, {1}, {1,2}] then forall(e in EMPLOYEE, d in 1..m-1)
+                 (x[e,d] = night -> x[e,d+1] != day) endif;
 
-constraint forall(e in EMPLOYEE, d in 1..m-1)
-                 (x[e,d] = night -> x[e,d+1] != afternoon);
+constraint if forbidden == [{}, {1}, {1,2}] then forall(e in EMPLOYEE, d in 1..m-1)
+                 (x[e,d] = night -> x[e,d+1] != afternoon) endif;
 
 % Forbidden 3 (if forbidden3)
-constraint forall(e in EMPLOYEE, d in 1..m-2)
-                 (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != night);
-constraint forall(e in EMPLOYEE, d in 1..m-2)
-                 (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != day);
-constraint forall(e in EMPLOYEE, d in 1..m-2)
-                 (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != afternoon);
-constraint forall(e in EMPLOYEE, d in 1..m-2)
-                 (x[e,d] = afternoon /\ x[e,d+1] = dayoff -> x[e,d+2] != day);                 
+constraint if forbidden3 == forbidden3_data then forall(e in EMPLOYEE, d in 1..m-2)
+                 (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != night) endif;
+constraint if forbidden3 == forbidden3_data then forall(e in EMPLOYEE, d in 1..m-2)
+                 (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != day) endif;
+constraint if forbidden3 == forbidden3_data then forall(e in EMPLOYEE, d in 1..m-2)
+                 (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != afternoon) endif;
+constraint if forbidden3 == forbidden3_data then forall(e in EMPLOYEE, d in 1..m-2)
+                 (x[e,d] = afternoon /\ x[e,d+1] = dayoff -> x[e,d+2] != day) endif;                 
 
-
-include "global_cardinality_low_up.mzn";
+% Constraint on lower and upper bonds of consecutive working days
+%% Lower bond
 constraint forall(e in EMPLOYEE)
-                 (global_cardinality_low_up([x[e,d] | d in DAY ],
-                   [ day, afternoon, night, dayoff ], 
-                   [ d_min, a_min, n_min, minOff ], 
-                   [ d_max, a_max, n_max, maxOff ])); 
-
+              (exists(d in 1..m-minOn+1)(
+                    forall(i in d..d+minOn-1)(
+                      x[e,i] != dayoff 
+                  )
+               )
+           ); 
+           
+%% Upper bond
+constraint forall(e in EMPLOYEE, d in 1..m-maxOn+1)(
+                  forall(i in d..d+maxOn-1)(
+                      x[e,i] != dayoff 
+                  ) -> if d+maxOn <= m then x[e,d+maxOn] == dayoff endif
+           ); 
+           
+% Constraint on lowe and upper bond of days off
+constraint forall(e in EMPLOYEE)(
+                 % Day off
+                 sum(d in DAY)(x[e,d] == dayoff) >= minOff /\
+                 sum(d in DAY)(x[e,d] == dayoff) <= maxOff
+                 );
+                 
+% Constraint on lowe and upper bond of shifts
+constraint forall(e in EMPLOYEE)(
+                  % Day shifts
+                 (
+                 sum(d in DAY)(x[e,d] == day) >= d_min /\
+                 sum(d in DAY)(x[e,d] == day) <= d_max
+                 ) \/
+                 % Afternoon shifts
+                 (
+                 sum(d in DAY)(x[e,d] == afternoon) >= a_min /\
+                 sum(d in DAY)(x[e,d] == afternoon) <= a_max
+                 ) \/
+                 % Night shifts
+                 (
+                 sum(d in DAY)(x[e,d] == night) >= n_min /\
+                 sum(d in DAY)(x[e,d] == night) <= n_max
+                 )
+                 );
 solve satisfy;
 
 output [ code[fix(x[e,d])] 
