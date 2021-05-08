@@ -21,13 +21,22 @@ int: a_max=maxShift[2]; % upper bound for afternoon shift
 int: n_min=minShift[3]; % lower bound for nightshift
 int: n_max=maxShift[3]; % upper bound for nightshift
 
-set of int: EMPLOYEE = 1..groups;
-set of int: DAY = 1..m;
+set of int: EMPLOYEE = 1..groups; % Employees
 
-set of int: SHIFT = 1..numShifts+1;
+set of int: DAY = 1..m; % Days
+
+% Shifts
+set of int: SHIFT = 1..numShifts+1; 
 int: day = 1; int: afternoon = 2; int: night = 3; int: dayoff = 4;
 array[SHIFT] of string: code = ["D", "A", "N", "-"];
 
+% Demand
+array[SHIFT, DAY] of int: demand = [| 5, 5, 5, 5, 5, 5, 0,
+                                    | 5, 5, 5, 5, 5, 5, 0,
+                                    | 1, 1, 1, 1, 1, 0, 0 |];
+
+
+% Solution matrix
 array[EMPLOYEE,DAY] of var SHIFT: x;
                    
 % Forbidden (if forbidden)
@@ -55,13 +64,6 @@ constraint forall(e in EMPLOYEE, d in 1..m-2)
 % Constraint of lower and upper bonds of day, afternoon, night shifts and dayoff
 include "global_cardinality_low_up.mzn";
 
-%constraint forall(e in EMPLOYEE)
-%                 (global_cardinality_low_up([x[e,d] | d in DAY ],
-%                   [ day, afternoon, night, dayoff ], 
-%                   [ d_min, a_min, n_min, minOff ], 
-%                   [ d_max, a_max, n_max, maxOff ])); 
-
-
 constraint forall(e in EMPLOYEE)
                  (global_cardinality_low_up([x[e,d] | d in DAY ],
                    [ day ], 
@@ -82,25 +84,6 @@ constraint forall(e in EMPLOYEE)
                    [ dayoff ], 
                    [ minOff ], 
                    [ maxOff ]));
-            
-                   
-%constraint forall(e in EMPLOYEE)
-%                 (global_cardinality_low_up([x[e,d] | d in DAY ],
-%                   [ afternoon ], 
-%                   [ a_min ], 
-%                   [ a_max ])); 
-                   
-%constraint forall(e in EMPLOYEE)
-%                 (global_cardinality_low_up([x[e,d] | d in DAY ],
-%                   [ night ], 
-%                   [ n_min ], 
-%                   [ n_max ])); 
-                   
-%constraint forall(e in EMPLOYEE)
-%                 (global_cardinality_low_up([x[e,d] | d in DAY ],
-%                   [ dayoff ], 
-%                   [ minOff ], 
-%                   [ maxOff ])); 
 
 % Constraint on lowe and upper bond of working days
 
