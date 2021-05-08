@@ -6,9 +6,9 @@ int: groups = 13;
 int: m=7; 
 
 int: minOn=3; % lower bound for working day
-int: maxOn=5; % upper bound for working day
+int: maxOn=7; % upper bound for working day
 
-int: minOff=1; % lower bound for dayoff
+int: minOff=2; % lower bound for dayoff
 int: maxOff=4; % upper bound for dayoff
 
 array[int] of int: minShift = [2, 2, 2];
@@ -75,28 +75,23 @@ constraint if forbidden3 != [||] then forall(e in EMPLOYEE, d in 1..m-2)
 
 % Constraint on lower and upper bonds of consecutive working days
 %% Lower bond
-constraint forall(e in EMPLOYEE)(
-                    exists(d in 1..m-minOn+1)(
-                      forall(i in d..d+minOn-1)(
-                        x[e,i] != dayoff 
-                      )
+constraint forall(e in EMPLOYEE)
+              (exists(d in 1..m-minOn+1)(
+                    forall(i in d..d+minOn-1)(
+                      x[e,i] != dayoff 
+                  )
                )
            ); 
-           
 %% Upper bond
-constraint forall(e in EMPLOYEE, d in 1..m-maxOn+1)(
-                      forall(i in d..d+maxOn-1)(
-                        x[e,i] != dayoff 
-                      ) -> if d+maxOn <= m then x[e,d+maxOn] == dayoff endif
+constraint forall(e in EMPLOYEE)
+              (exists(d in 1..m-minOn+1)(
+                    forall(i in d..d+minOn-1)(
+                      x[e,i] != dayoff 
+                  )
+               )
            ); 
 
            
-% constraint forall(e in EMPLOYEE, d in 1..m-1)(
-%                 % Working day
-%                 sum(d in DAY)((x[e,d] == day) + (x[e,d] == afternoon) + (x[e,d] == night)) >= minOn /\
-%                 sum(d in DAY)((x[e,d] == day) + (x[e,d] == afternoon) + (x[e,d] == night)) <= maxOn 
-%                 );
-                 
 % Constraint on lowe and upper bond of days off
 constraint forall(e in EMPLOYEE)(
                  % Day off
