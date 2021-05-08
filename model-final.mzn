@@ -7,17 +7,9 @@ int: m=7;
 
 int: minOn=3; % lower bound for working day
 int: maxOn=7; % upper bound for working day
+
 int: minOff=1; % lower bound for dayoff
 int: maxOff=4; % upper bound for dayoff
-
-set of int: EMPLOYEE = 1..groups;
-set of int: DAY = 1..m;
-
-set of int: SHIFT = 1..numShifts+1;
-int: day = 1; int: afternoon = 2; int: night = 3; int: dayoff = 4;
-array[SHIFT] of string: code = ["D", "A", "N", "-"];
-
-
 
 int: d_min=2; % lower bound for dayshift
 int: d_max=5; % upper bound for dayshift
@@ -26,12 +18,19 @@ int: a_max=4; % upper bound for afternoon shift
 int: n_min=2; % lower bound for nightshift
 int: n_max=3; % upper bound for nightshift
 
+set of int: EMPLOYEE = 1..groups;
+set of int: DAY = 1..m;
+
+set of int: SHIFT = 1..numShifts+1;
+int: day = 1; int: afternoon = 2; int: night = 3; int: dayoff = 4;
+array[SHIFT] of string: code = ["D", "A", "N", "-"];
 
 array[EMPLOYEE,DAY] of var SHIFT: x;
 
-constraint forall(e in EMPLOYEE, d in 1..m-2)
-                 ( x[e,d] = night /\ x[e,d+1] = night 
-                   -> x[e,d+2] = dayoff);
+% constraint forall(e in EMPLOYEE, d in 1..m-2)
+%                 ( x[e,d] = night /\ x[e,d+1] = night 
+%                   -> x[e,d+2] = dayoff);
+                   
 % Forbidden (if forbidden)
 %% Forbidden afternoon
 constraint forall(e in EMPLOYEE, d in 1..m-1)
