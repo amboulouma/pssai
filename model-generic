@@ -85,7 +85,6 @@ constraint forall(e in EMPLOYEE)
                   )
                )
            ); 
-           
 %% Upper bond
 constraint forall(e in EMPLOYEE, d in 1..m-maxOn+1)(
                   forall(i in d..d+maxOn-1)(
