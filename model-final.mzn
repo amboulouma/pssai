@@ -11,12 +11,15 @@ int: maxOn=7; % upper bound for working day
 int: minOff=1; % lower bound for dayoff
 int: maxOff=4; % upper bound for dayoff
 
-int: d_min=2; % lower bound for dayshift
-int: d_max=5; % upper bound for dayshift
-int: a_min=2; % lower bound for afternoon shift
-int: a_max=4; % upper bound for afternoon shift
-int: n_min=2; % lower bound for nightshift
-int: n_max=3; % upper bound for nightshift
+array[int] of int: minShift = [2, 2, 2];
+array[int] of int: maxShift = [6, 6, 4];
+
+int: d_min=minShift[1]; % lower bound for dayshift
+int: d_max=maxShift[1]; % upper bound for dayshift
+int: a_min=minShift[2]; % lower bound for afternoon shift
+int: a_max=maxShift[2]; % upper bound for afternoon shift
+int: n_min=minShift[3]; % lower bound for nightshift
+int: n_max=maxShift[3]; % upper bound for nightshift
 
 set of int: EMPLOYEE = 1..groups;
 set of int: DAY = 1..m;
