@@ -5,7 +5,7 @@ int: groups = 13;
 % number of days
 int: m=7; 
 
-int: minOn=4; % lower bound for working day
+int: minOn=3; % lower bound for working day
 int: maxOn=7; % upper bound for working day
 
 int: minOff=1; % lower bound for dayoff
@@ -67,35 +67,35 @@ constraint forall(e in EMPLOYEE, d in 1..m-2)
 constraint forall(e in EMPLOYEE, d in 1..m-2)
                  (x[e,d] = afternoon /\ x[e,d+1] = dayoff -> x[e,d+2] != day);                 
 
-% Constraint of lower and upper bonds of day, afternoon, night shifts and dayoff
-include "global_cardinality_low_up.mzn";
-
-constraint forall(e in EMPLOYEE)
-                 (global_cardinality_low_up([x[e,d] | d in DAY ],
-                   [ day ], 
-                   [ d_min ], 
-                   [ d_max ])) 
-           \/ forall(e in EMPLOYEE)
-                 (global_cardinality_low_up([x[e,d] | d in DAY ],
-                   [ afternoon ], 
-                   [ a_min ], 
-                   [ a_max ]))
-           \/ forall(e in EMPLOYEE)
-                 (global_cardinality_low_up([x[e,d] | d in DAY ],
-                   [ night ], 
-                   [ n_min ], 
-                   [ n_max ]))
-           \/ forall(e in EMPLOYEE)
-                 (global_cardinality_low_up([x[e,d] | d in DAY ],
-                   [ dayoff ], 
-                   [ minOff ], 
-                   [ maxOff ]));
-
 % Constraint on lowe and upper bond of working days
 constraint forall(e in EMPLOYEE)(
+                  % Working day
                  sum(d in DAY)((x[e,d] == day) + (x[e,d] == afternoon) + (x[e,d] == night)) >= minOn /\
-                 sum(d in DAY)((x[e,d] == day) + (x[e,d] == afternoon) + (x[e,d] == night)) <= maxOn 
+                 sum(d in DAY)((x[e,d] == day) + (x[e,d] == afternoon) + (x[e,d] == night)) <= maxOn /\
+                 % Day off
+                 sum(d in DAY)(x[e,d] == dayoff) >= minOff /\
+                 sum(d in DAY)(x[e,d] == dayoff) <= maxOff
                  );
+                 
+% Constraint on lowe and upper bond of shifts
+constraint forall(e in EMPLOYEE)(
+                  % Day shifts
+                 (
+                 sum(d in DAY)(x[e,d] == day) >= d_min /\
+                 sum(d in DAY)(x[e,d] == day) <= d_max
+                 ) \/
+                 % Afternoon shifts
+                 (
+                 sum(d in DAY)(x[e,d] == afternoon) >= a_min /\
+                 sum(d in DAY)(x[e,d] == afternoon) <= a_max
+                 ) \/
+                 % Night shifts
+                 (
+                 sum(d in DAY)(x[e,d] == night) >= n_min /\
+                 sum(d in DAY)(x[e,d] == night) <= n_max
+                 )
+                 );
+
 
 solve satisfy;
 
