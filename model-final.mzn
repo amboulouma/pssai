@@ -83,12 +83,10 @@ constraint forall(e in EMPLOYEE)
                )
            ); 
 %% Upper bond
-constraint forall(e in EMPLOYEE)
-              (exists(d in 1..m-minOn+1)(
-                    forall(i in d..d+minOn-1)(
-                      x[e,i] != dayoff 
-                  )
-               )
+constraint forall(e in EMPLOYEE, d in 1..m-maxOn+1)(
+                 forall(i in d..d+maxOn-1)(
+                    x[e,i] != dayoff 
+                 ) -> if d+maxOn <= m then x[e,d+maxOn] == dayoff endif
            ); 
 
            
