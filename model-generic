@@ -23,7 +23,7 @@ array[int] of set of int: forbidden; % Forbidden set 1
 array[int, int] of int: forbidden3; % Forbidden set 3
 
 float: lf = length(forbidden);
-float: lf_3=length(forbidden3)/3;
+float: lf_3 = length(forbidden3)/3;
 
 array[1..numShifts, DAY] of int: demand; % Demand
 
@@ -54,7 +54,7 @@ constraint forall(d in 1..m)(
 
 % Forbidden (if forbidden)
 %% Forbidden afternoon
-constraint if lf == 3 then forall(e in EMPLOYEE, d in 1..m-1)
+constraint if lf == 3 \/ lf == 2 then forall(e in EMPLOYEE, d in 1..m-1)
                  (x[e,d] = afternoon -> x[e,d+1] != day) endif;
 
 %% Forbidden nights
@@ -65,24 +65,26 @@ constraint if lf == 3 then forall(e in EMPLOYEE, d in 1..m-1)
                  (x[e,d] = night -> x[e,d+1] != afternoon) endif;
 
 % Forbidden 3 (if forbidden3)
-constraint if lf_3 == 4 then forall(e in EMPLOYEE, d in 1..m-2)
-                 (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != night) endif;
-constraint if lf_3 == 4 then forall(e in EMPLOYEE, d in 1..m-2)
+
+constraint if lf_3 == 4 \/ lf_3 == 3 then forall(e in EMPLOYEE, d in 1..m-2)
                  (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != day) endif;
-constraint if lf_3 == 4 then forall(e in EMPLOYEE, d in 1..m-2)
+constraint if lf_3 == 4 \/ lf_3 == 3 then forall(e in EMPLOYEE, d in 1..m-2)
                  (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != afternoon) endif;
+constraint if lf_3 == 4 \/ lf_3 == 3 then forall(e in EMPLOYEE, d in 1..m-2)
+                 (x[e,d] = afternoon /\ x[e,d+1] = dayoff -> x[e,d+2] != day) endif;         
 constraint if lf_3 == 4 then forall(e in EMPLOYEE, d in 1..m-2)
-                 (x[e,d] = afternoon /\ x[e,d+1] = dayoff -> x[e,d+2] != day) endif;                 
+                 (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != night) endif;        
 
 % Constraint on lower and upper bonds of consecutive working days
 %% Lower bond
-constraint forall(e in EMPLOYEE)
-              (exists(d in 1..m-minOn+1)(
-                    forall(i in d..d+minOn-1)(
-                      x[e,i] != dayoff 
-                  )
-               )
-           ); 
+%constraint forall(e in EMPLOYEE)
+%              (exists(d in 1..m-minOn+1)(
+%                    forall(i in d..d+minOn-1)(
+%                      x[e,i] != dayoff 
+%                  )
+%              )
+%           ); 
+
 %% Upper bond
 constraint forall(e in EMPLOYEE, d in 1..m-maxOn+1)(
                   forall(i in d..d+maxOn-1)(
