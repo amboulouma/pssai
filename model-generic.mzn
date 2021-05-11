@@ -33,13 +33,24 @@ int: d_min=minShift[1]; % lower bound for dayshift
 int: d_max=maxShift[1]; % upper bound for dayshift
 int: a_min=minShift[2]; % lower bound for afternoon shift
 int: a_max=maxShift[2]; % upper bound for afternoon shift
-int: n_min=minShift[3]; % lower bound for nightshift
-int: n_max=maxShift[3]; % upper bound for nightshift
+var int: n_min;
+var int: n_max;
+
+constraint if length(minShift) == 3 then 
+  n_min=minShift[3] 
+endif; % lower bound for nightshift
+  
+constraint if length(maxShift) == 3 then 
+  n_max=maxShift[3] 
+ endif; % upper bound for nightshift
 
 % Shifts
 int: shifts = numShifts+1;
+
 set of int: SHIFT = 1..shifts; 
+
 int: day = 1; int: afternoon = 2; int: night = 3; int: dayoff = 4;
+
 array[SHIFT] of string: code = ["D", "A", "N", "-"];
 
 % Solution matrix
@@ -49,7 +60,7 @@ array[EMPLOYEE,DAY] of var SHIFT: x;
 constraint forall(d in 1..m)(
                  sum(e in EMPLOYEE)(x[e,d] == day) == demand[1, d] /\
                  sum(e in EMPLOYEE)(x[e,d] == afternoon) == demand[2, d] /\
-                 sum(e in EMPLOYEE)(x[e,d] == night) == demand[3, d]
+                 if length(minShift) == 3 then sum(e in EMPLOYEE)(x[e,d] == night) == demand[3, d] endif
                  );
 
 % Forbidden (if forbidden)
@@ -58,34 +69,56 @@ constraint if lf == 3 \/ lf == 2 then forall(e in EMPLOYEE, d in 1..m-1)
                  (x[e,d] = afternoon -> x[e,d+1] != day) endif;
 
 %% Forbidden nights
-constraint if lf == 3 then forall(e in EMPLOYEE, d in 1..m-1)
+constraint if length(minShift) == 3 /\ lf == 3 then forall(e in EMPLOYEE, d in 1..m-1)
                  (x[e,d] = night -> x[e,d+1] != day) endif;
 
-constraint if lf == 3 then forall(e in EMPLOYEE, d in 1..m-1)
+constraint if length(minShift) == 3 /\ lf == 3 then forall(e in EMPLOYEE, d in 1..m-1)
                  (x[e,d] = night -> x[e,d+1] != afternoon) endif;
 
 % Forbidden 3 (if forbidden3)
 
-constraint if lf_3 == 4 \/ lf_3 == 3 then forall(e in EMPLOYEE, d in 1..m-2)
+constraint if length(minShift) == 3 /\ (lf_3 == 4 \/ lf_3 == 3) then forall(e in EMPLOYEE, d in 1..m-2)
                  (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != day) endif;
-constraint if lf_3 == 4 \/ lf_3 == 3 then forall(e in EMPLOYEE, d in 1..m-2)
+constraint if length(minShift) == 3 /\ (lf_3 == 4 \/ lf_3 == 3) then forall(e in EMPLOYEE, d in 1..m-2)
                  (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != afternoon) endif;
 constraint if lf_3 == 4 \/ lf_3 == 3 then forall(e in EMPLOYEE, d in 1..m-2)
                  (x[e,d] = afternoon /\ x[e,d+1] = dayoff -> x[e,d+2] != day) endif;         
-constraint if lf_3 == 4 then forall(e in EMPLOYEE, d in 1..m-2)
+constraint if length(minShift) == 3 /\ (lf_3 == 4) then forall(e in EMPLOYEE, d in 1..m-2)
                  (x[e,d] = night /\ x[e,d+1] = dayoff -> x[e,d+2] != night) endif;        
 
 % Constraint on lower and upper bonds of consecutive working days
 %% Lower bond
+% minOn = 3
+% 1 time: x[e,i] != dayoff /\ x[e,i+1] != dayoff -> 2 days work, sum = 1 >= 2 = minOn - 1
+% 2 time: x[e,i] != dayoff /\ x[e,i+1] != dayoff -> 3 days work, sum = 2 >= 2 = minOn - 1
+% 3 time: x[e,i] != dayoff /\ x[e,i+1] != dayoff -> 4 days work, sum = 3
+
+% Constraint 1
+% constraint forall(e in EMPLOYEE)(
+%              exists(d in 1..m-minOn-1)(sum(i in d..d+minOn-1)((x[e,i] != dayoff /\ x[e,i+1] != dayoff) == true) >= minOn - 1)  %repeat minOn time
+%           );
+           
+% Constraint 2
 %constraint forall(e in EMPLOYEE)
 %              (exists(d in 1..m-minOn+1)(
-%                    forall(i in d..d+minOn-1)(
-%                      x[e,i] != dayoff 
-%                  )
-%              )
-%           ); 
+%%                    forall(i in d..d+minOn-1)(
+ %                     x[e,i] != dayoff 
+ %                 )
+  %            )
+   %        ); 
 
-%% Upper bond
+% Constraint 3
+%constraint forall (e in EMPLOYEE) (
+%%    sum(d in 1..m-1)(x[e,d] != dayoff /\ x[e,d] == x[e,d+1]) > minOn-1
+%);
+% Constraint 4
+constraint forall(e in EMPLOYEE)(
+                sum(d in 1..m-1)(
+                      x[e,d] != dayoff /\ x[e,d+1] != dayoff
+                  ) > minOn - 1
+           ); 
+
+%% Upper bound
 constraint forall(e in EMPLOYEE, d in 1..m-maxOn+1)(
                   forall(i in d..d+maxOn-1)(
                       x[e,i] != dayoff 
@@ -111,12 +144,12 @@ constraint forall(e in EMPLOYEE)(
                  sum(d in DAY)(x[e,d] == afternoon) >= a_min /\
                  sum(d in DAY)(x[e,d] == afternoon) <= a_max
                  ) \/
-                 % Night shifts
-                 (
-                 sum(d in DAY)(x[e,d] == night) >= n_min /\
-                 sum(d in DAY)(x[e,d] == night) <= n_max
-                 )
+                 if length(minShift) == 3 then (
+                   sum(d in DAY)(x[e,d] == night) >= n_min /\
+                   sum(d in DAY)(x[e,d] == night) <= n_max
+                 ) endif
                  );
+                 
 solve satisfy;
 
 output [ code[fix(x[e,d])] 
