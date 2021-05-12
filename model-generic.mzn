@@ -1,12 +1,9 @@
 % Project Topic D: Rotating Workforce Scheduling
 % Problem Solving and Search in AI: Programming Exercises
 % Mohamed Amine Boulouma
-% 
+% Sher Agha Aman
 
 % Input variables
-int: m=7; % number of days
-set of int: DAY = 1..m; % Days
-
 int: minOn; % lower bound for working day
 int: maxOn; % upper bound for working day
 
@@ -22,10 +19,14 @@ array[int] of int: maxShift; % Upper bound shifts
 array[int] of set of int: forbidden; % Forbidden set 1
 array[int, int] of int: forbidden3; % Forbidden set 3
 
-float: lf = length(forbidden);
-float: lf_3 = length(forbidden3)/3;
+int: m=7; % number of days
+set of int: DAY = 1..m; % Days
 
 array[1..numShifts, DAY] of int: demand; % Demand
+
+% Helping variables
+float: lf = length(forbidden); % length of the forbidden set
+float: lf_3 = length(forbidden3)/3; % length of the forbidden3 set
 
 set of int: EMPLOYEE = 1..groups; % Employees
 
@@ -46,11 +47,8 @@ constraint if length(maxShift) == 3 then
 
 % Shifts
 int: shifts = numShifts+1;
-
 set of int: SHIFT = 1..shifts; 
-
 int: day = 1; int: afternoon = 2; int: night = 3; int: dayoff = 4;
-
 array[SHIFT] of string: code = ["D", "A", "N", "-"];
 
 % Solution matrix
@@ -63,7 +61,7 @@ constraint forall(d in 1..m)(
                  if length(minShift) == 3 then sum(e in EMPLOYEE)(x[e,d] == night) == demand[3, d] endif
                  );
 
-% Forbidden (if forbidden)
+% Forbidden constraints
 %% Forbidden afternoon
 constraint if lf == 3 \/ lf == 2 then forall(e in EMPLOYEE, d in 1..m-1)
                  (x[e,d] = afternoon -> x[e,d+1] != day) endif;
@@ -88,14 +86,11 @@ constraint if length(minShift) == 3 /\ (lf_3 == 4) then forall(e in EMPLOYEE, d 
 
 % Constraint on lower and upper bonds of consecutive working days
 %% Lower bond
-% minOn = 3
-% 1 time: x[e,i] != dayoff /\ x[e,i+1] != dayoff -> 2 days work, sum = 1 >= 2 = minOn - 1
-% 2 time: x[e,i] != dayoff /\ x[e,i+1] != dayoff -> 3 days work, sum = 2 >= 2 = minOn - 1
-% 3 time: x[e,i] != dayoff /\ x[e,i+1] != dayoff -> 4 days work, sum = 3
 
 % Constraint 1
 %constraint forall(e in EMPLOYEE)(
-%              exists(d in 1..m-minOn-1)(sum(i in d..d+minOn-1)((x[e,i] != dayoff /\ x[e,i+1] != dayoff) == true) >= minOn - 1)  %repeat minOn time
+%              exists(d in 1..m-minOn-1)(sum(i in d..d+minOn-1)((x[e,i] != dayoff 
+%                                        /\ x[e,i+1] != dayoff) == true) >= minOn - 1)  
 %           );
            
 % Constraint 2
@@ -105,13 +100,12 @@ constraint if length(minShift) == 3 /\ (lf_3 == 4) then forall(e in EMPLOYEE, d 
 %constraint forall (e in EMPLOYEE,d in 2..m) (shiftCount[e,d] = if x[e,d] == dayoff then 0 else shiftCount[e,d-1] + 1 endif);
 %constraint forall (e in EMPLOYEE)((sum(d in 1..m) (shiftCount[e,d] == minOn))>=1);
 
-%output[show(shiftCount)];
-
 % Constraint 3
 %constraint forall (e in EMPLOYEE) (
-%%    sum(d in 1..m-1)(x[e,d] != dayoff /\ x[e,d] == x[e,d+1]) > minOn-1
+%    sum(d in 1..m-1)(x[e,d] != dayoff /\ x[e,d] == x[e,d+1]) > minOn-1
 %);
 
+% Constraint on lower and upper bonds of consecutive working days
 % constraint 4
 constraint forall(e in EMPLOYEE)
               (exists(d in 1..m-minOn+1)(
@@ -128,14 +122,14 @@ constraint forall(e in EMPLOYEE, d in 1..m-maxOn+1)(
                   ) -> if d+maxOn <= m then x[e,d+maxOn] == dayoff endif
            ); 
            
-% Constraint on lowe and upper bond of days off
+% Constraint on lower and upper bond of days off
 constraint forall(e in EMPLOYEE)(
                  % Day off
                  sum(d in DAY)(x[e,d] == dayoff) >= minOff /\
                  sum(d in DAY)(x[e,d] == dayoff) <= maxOff
                  );
                  
-% Constraint on lowe and upper bond of shifts
+% Constraint on lower and upper bond of shifts
 constraint forall(e in EMPLOYEE)(
                   % Day shifts
                  (
@@ -164,9 +158,6 @@ constraint forall(e in EMPLOYEE)(k[e]=work[e,7]);
 var int: b = sum(e in EMPLOYEE) ((k[e]-5)^2);
 
 solve minimize b;
-
-output [show(b)
-        ++ "\n" ];
 
 output [ code[fix(x[e,d])] 
          ++ if d = m then "\n" else " " endif
