@@ -80,9 +80,14 @@ constraint if lf_3 == 4 \/ lf_3 == 3 then forall(e in EMPLOYEE, d in 1..m-2)
 %              )
 %           ); 
 
-% Constraint 3
-
-    
+% Constraint 4
+constraint forall(e in EMPLOYEE)
+              (exists(d in 1..m-minOn+1)(
+                    forall(i in d..d+minOn-1)(
+                     x[e,i] != dayoff 
+                  )
+             )
+           );     
 
 %% Upper bound
 constraint forall(e in EMPLOYEE, d in 1..m-maxOn+1)(
@@ -111,7 +116,21 @@ constraint forall(e in EMPLOYEE)(
                  sum(d in DAY)(x[e,d] == afternoon) <= a_max
                  )
                  );
-solve satisfy;
+                 
+% Defining work as how many woking day it is in the given day:
+array[EMPLOYEE,1..m] of var int: work;
+constraint forall (e in EMPLOYEE) (work[e,1] = if x[e,1] == dayoff then 0 else 1 endif);
+constraint forall (e in EMPLOYEE,d in 2..m) (work[e,d] = if x[e,d] == dayoff then work[e,d-1] else work[e,d-1] + 1 endif);
+% Setting k as how many woking day employee has done in end of the week:
+array[EMPLOYEE] of var int: k;
+constraint forall(e in EMPLOYEE)(k[e]=work[e,7]);
+% Defining our b as following;
+var int: b = sum(e in EMPLOYEE) ((k[e]-5)^2);
+
+solve minimize b;
+
+%output [ show(fix(b)) 
+%          ++ "\n"];
 
 output [ code[fix(x[e,d])] 
          ++ if d = m then "\n" else " " endif
