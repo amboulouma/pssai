@@ -94,28 +94,31 @@ constraint if length(minShift) == 3 /\ (lf_3 == 4) then forall(e in EMPLOYEE, d 
 % 3 time: x[e,i] != dayoff /\ x[e,i+1] != dayoff -> 4 days work, sum = 3
 
 % Constraint 1
-% constraint forall(e in EMPLOYEE)(
+%constraint forall(e in EMPLOYEE)(
 %              exists(d in 1..m-minOn-1)(sum(i in d..d+minOn-1)((x[e,i] != dayoff /\ x[e,i+1] != dayoff) == true) >= minOn - 1)  %repeat minOn time
 %           );
            
 % Constraint 2
-%constraint forall(e in EMPLOYEE)
-%              (exists(d in 1..m-minOn+1)(
-%%                    forall(i in d..d+minOn-1)(
- %                     x[e,i] != dayoff 
- %                 )
-  %            )
-   %        ); 
+%array[EMPLOYEE,1..m] of var int: shiftCount;
+
+%constraint forall (e in EMPLOYEE) (shiftCount[e,1] = if x[e,1] == dayoff then 0 else 1 endif);
+%constraint forall (e in EMPLOYEE,d in 2..m) (shiftCount[e,d] = if x[e,d] == dayoff then 0 else shiftCount[e,d-1] + 1 endif);
+%constraint forall (e in EMPLOYEE)((sum(d in 1..m) (shiftCount[e,d] == minOn))>=1);
+
+%output[show(shiftCount)];
 
 % Constraint 3
 %constraint forall (e in EMPLOYEE) (
 %%    sum(d in 1..m-1)(x[e,d] != dayoff /\ x[e,d] == x[e,d+1]) > minOn-1
 %);
-% Constraint 4
-constraint forall(e in EMPLOYEE)(
-                sum(d in 1..m-1)(
-                      x[e,d] != dayoff /\ x[e,d+1] != dayoff
-                  ) > minOn - 1
+
+% constraint 4
+constraint forall(e in EMPLOYEE)
+              (exists(d in 1..m-minOn+1)(
+                    forall(i in d..d+minOn-1)(
+                     x[e,i] != dayoff 
+                  )
+              )
            ); 
 
 %% Upper bound
@@ -149,8 +152,21 @@ constraint forall(e in EMPLOYEE)(
                    sum(d in DAY)(x[e,d] == night) <= n_max
                  ) endif
                  );
-                 
-solve satisfy;
+
+% Defining work as how many woking day it is in the given day:
+array[EMPLOYEE,1..m] of var int: work;
+constraint forall (e in EMPLOYEE) (work[e,1] = if x[e,1] == dayoff then 0 else 1 endif);
+constraint forall (e in EMPLOYEE,d in 2..m) (work[e,d] = if x[e,d] == dayoff then work[e,d-1] else work[e,d-1] + 1 endif);
+% Setting k as how many woking day employee has done in end of the week:
+array[EMPLOYEE] of var int: k;
+constraint forall(e in EMPLOYEE)(k[e]=work[e,7]);
+% Defining our b as following;
+var int: b = sum(e in EMPLOYEE) ((k[e]-5)^2);
+
+solve minimize b;
+
+output [show(b)
+        ++ "\n" ];
 
 output [ code[fix(x[e,d])] 
          ++ if d = m then "\n" else " " endif
